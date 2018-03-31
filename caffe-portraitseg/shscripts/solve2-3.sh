@@ -1,0 +1,1 @@
+./build/tools/caffe train --solver=/media/BigDisk/xiaoyong/datafrommac/FCN/ours2/solver2_ours_neww-3.prototxt --weights=./pyscripts/train2_init_iter_5.caffemodel --gpu=0 2>&1 | tee ./shscripts/neww-3.txt
