@@ -19,18 +19,14 @@ class DataLoader:
     def shuffle(self):
         self.train_data=np.random.permutation(self.train_data)
 
-    def generateBatch(self):
-        X,y=[],[]
-        for i in range(self.batch_counter*self.batch_size,min(int(self.train_split*self.total_samples), \
+    def generate_batch(self):
+        X, y = [], []
+        for i in range(self.batch_counter*self.batch_size,min(int(self.train_split*self.total_samples),
                        (self.batch_counter+1) * self.batch_size)):
             X.append(plt.imread(self.data_folder+str(self.train_data[i])))
             y.append(loadmat(self.label_folder+str(self.train_data[i][:-4])+'_mask')['mask'])
-        self.batch_counter+=1
-        return X,y
+        self.batch_counter += 1
+        return np.moveaxis(np.array(X), -1, 1), np.expand_dims(np.array(y), 1)
 
-# obj=DataLoader(25)
-# obj.shuffle()
-# X,y=obj.generateBatch()
-# X=np.array(X)
-# y=np.array(y)
-# print(X.shape, y.shape)
+    def get_training_set_size(self):
+        return int(self.train_split*self.total_samples)

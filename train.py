@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 from FCN import FCN
+from DataLoader import DataLoader
 
 
 # OPTIONS
@@ -12,7 +13,7 @@ reg = 1e-4
 
 # TRAINING...
 
-model = FCN(2)
+model = FCN()
 optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=reg)
 loss_function = nn.BCEWithLogitsLoss()
 
@@ -20,14 +21,14 @@ dlo = DataLoader(batch_size)
 training_set_size = dlo.get_training_set_size()
 
 for e in range(epochs):
-    dlo.shuffle_training_set()
+    dlo.shuffle()
     i = 0
     while i < training_set_size:
         model.zero_grad()
         i += batch_size
-        x, y = dlo.get_next_batch()
+        x, y = dlo.generate_batch()
         x_var = torch.autograd.Variable(torch.FloatTensor(x))
-        y_var = torch.autograd.Variable(torch.FloatTensor(y))
+        y_var = torch.autograd.Variable(torch.FloatTensor(y.astype('uint8')))
         output = model(x_var)
         loss = loss_function(output, y_var)
         loss.backward()

@@ -10,7 +10,7 @@ class FCN(nn.Module):
         self.relu = nn.ReLU(inplace=True)
         self.conv2 = nn.Conv2d(16, 1, kernel_size=3, stride=1, padding=1)
 
-    def forward(self, *input):
-        output = self.bn1(self.relu(self.conv1(input)))
+    def forward(self, batch):
+        output = self.bn1(self.relu(self.conv1(batch)))
         output = self.conv2(output)
         return output
