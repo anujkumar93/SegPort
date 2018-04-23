@@ -53,12 +53,30 @@ class FCN(nn.Module):
         self.score = nn.Conv2d(4096, 1, kernel_size=1)
 
         # TODO: deconv (ConvTranspose2d) layers, etc...
-
-        # self.bn1 = nn.BatchNorm2d(16)
-        # self.relu = nn.ReLU(inplace=True)
-        # self.conv2 = nn.Conv2d(16, 1, kernel_size=3, stride=1, padding=1)
+        self.score2 = nn.ConvTranspose2d(1, 1, kernel_size=4, stride=2)
+        self.score_pool4 = nn.Conv2d(512, 1, kernel_size=1)
 
     def forward(self, batch):
-        output = self.bn1(self.relu(self.conv1(batch)))
-        output = self.conv2(output)
-        return output
+        output_pool1 = self.pool1(self.relu1_2(self.conv1_2(
+                                  self.relu1_1(self.conv1_1(batch)))))
+        output_pool2 = self.pool2(self.relu2_2(self.conv2_2(
+                                  self.relu2_1(self.conv2_1(output_pool1)))))
+        output_pool3 = self.pool3(self.relu3_3(self.conv3_3(
+                                  self.relu3_2(self.conv3_2(
+                                  self.relu3_1(self.conv3_1(output_pool2)))))))
+        output_pool4 = self.pool4(self.relu4_3(self.conv4_3(
+                                  self.relu4_2(self.conv4_2(
+                                  self.relu4_1(self.conv4_1(output_pool3)))))))
+        output_pool5 = self.pool5(self.relu5_3(self.conv5_3(
+                                  self.relu5_2(self.conv5_2(
+                                  self.relu5_1(self.conv5_1(output_pool4)))))))
+        output_drop6 = self.drop6(self.relu6(self.conv6(output_pool5)))
+        output_drop7 = self.drop7(self.relu7(self.fc7(output_drop6)))
+        output_score = self.score(output_drop7)
+
+        # TODO: deconv (ConvTranspose2d) layers, etc...
+        output_score2 = self.score2(output_score)
+        output_score_pool4 = self.score_pool4(output_pool4)
+        # crop output_score_pool4 to match output_score2
+
+        return output_score

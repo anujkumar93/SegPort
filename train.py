@@ -6,7 +6,7 @@ from DataLoader import DataLoader
 
 # OPTIONS
 epochs = 5
-batch_size = 20
+batch_size = 1
 lr = 1e-4
 reg = 1e-4
 
