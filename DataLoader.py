@@ -15,6 +15,14 @@ class DataLoader:
         self.test_data=self.file_list[self.training_set_size:]
         self.batch_counter=0
         self.batch_size=batch_size
+        sum_train=np.zeros((400,300,3))
+        for file_name in self.train_data:
+            data = plt.imread(self.data_folder + file_name)
+            if len(data.shape) < 3:
+                data = np.stack((data,)*3, 2)
+            data=data/255
+            sum_train+=data
+        self.mean_train=sum_train/float(self.training_set_size)
         assert self.batch_size==int(self.batch_size)
 
     def shuffle(self):
@@ -28,6 +36,8 @@ class DataLoader:
             data = plt.imread(self.data_folder+str(self.train_data[i]))
             if len(data.shape) < 3:
                 data = np.stack((data,)*3, 2)
+            data=data/255
+            data-=self.mean_train
             X.append(data)
             y.append(loadmat(self.label_folder+str(self.train_data[i][:-4])+'_mask')['mask'])
         self.batch_counter += 1
