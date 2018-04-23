@@ -52,22 +52,13 @@ class FCN(nn.Module):
 
         self.score = nn.Conv2d(4096, 1, kernel_size=1)
 
-        self.score2 = nn.ConvTranspose2d(1, 1, kernel_size=4, stride=2)
+        self.score_deconv1 = nn.ConvTranspose2d(1, 1, kernel_size=4, stride=2)
         self.score_pool4 = nn.Conv2d(512, 1, kernel_size=1)
 
-        self.score4 = nn.ConvTranspose2d(1, 1, kernel_size=4, stride=2, bias=False)
+        self.score_deconv2 = nn.ConvTranspose2d(1, 1, kernel_size=4, stride=2, bias=False)
         self.score_pool3 = nn.Conv2d(256, 1, kernel_size=1)
 
-        self.bigscore = nn.ConvTranspose2d(1, 1, kernel_size=16, stride=8, bias=False)
-
-    def crop(self, from_mat, to_mat):
-        _,x1,x2,x3=from_mat.shape
-        _,y1,y2,y3=to_mat.shape
-        offset1,offset2,offset3=int((x1-y1)/2),int((x2-y2)/2),int((x3-y3)/2)
-        assert offset1>=0
-        assert offset2>=0
-        assert offset3>=0
-        return from_mat[:,offset1:offset1+y1,offset2:offset2+y2,offset3:offset3+y3]
+        self.score_deconv3 = nn.ConvTranspose2d(1, 1, kernel_size=16, stride=8, bias=False)
 
     def forward(self, batch):
         output_pool1 = self.pool1(self.relu1_2(self.conv1_2(
@@ -87,17 +78,26 @@ class FCN(nn.Module):
         output_drop7 = self.drop7(self.relu7(self.fc7(output_drop6)))
         output_score = self.score(output_drop7)
 
-        output_score2 = self.score2(output_score)
+        output_score_deconv1 = self.score_deconv1(output_score)
         output_score_pool4 = self.score_pool4(output_pool4)
-        output_score_pool4_cropped = self.crop(output_score_pool4, output_score2)
-        output_score_fused = output_score2 + output_score_pool4_cropped
+        output_score_pool4_cropped = self.crop(output_score_pool4, output_score_deconv1)
+        output_score_fused1 = output_score_deconv1 + output_score_pool4_cropped
 
-        output_score4 = self.score4(output_score_fused)
+        output_score_deconv2 = self.score_deconv2(output_score_fused1)
         output_score_pool3 = self.score_pool3(output_pool3)
-        output_score_pool3_cropped = self.crop(output_score_pool3, output_score4)
-        output_score_final = output_score4 + output_score_pool3_cropped
+        output_score_pool3_cropped = self.crop(output_score_pool3, output_score_deconv2)
+        output_score_fused2 = output_score_deconv2 + output_score_pool3_cropped
 
-        output_bigscore = self.bigscore(output_score_final)
-        output_upscore = self.crop(output_bigscore, batch)
+        output_score_deconv3 = self.score_deconv3(output_score_fused2)
+        output_score_final = self.crop(output_score_deconv3, batch)
 
-        return output_upscore
+        return output_score_final
+
+    @staticmethod
+    def crop(from_mat, to_mat):
+        _, _, x1, y1 = from_mat.shape
+        _, _, x2, y2 = to_mat.shape
+        offset_x, offset_y = int((x1 - x2) / 2), int((y1 - y2) / 2)
+        assert offset_x >= 0
+        assert offset_y >= 0
+        return from_mat[:, :, offset_x:offset_x + x2, offset_y:offset_y + y2]
