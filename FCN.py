@@ -1,5 +1,5 @@
 import torch.nn as nn
-
+import numpy as np
 
 class FCN(nn.Module):
 
@@ -55,6 +55,15 @@ class FCN(nn.Module):
         # TODO: deconv (ConvTranspose2d) layers, etc...
         self.score2 = nn.ConvTranspose2d(1, 1, kernel_size=4, stride=2)
         self.score_pool4 = nn.Conv2d(512, 1, kernel_size=1)
+
+    def crop(self, from_mat, to_mat):
+        _,x1,x2,x3=from_mat.shape
+        _,y1,y2,y3=to_mat.shape
+        offset1,offset2,offset3=int((x1-y1)/2),int((x2-y2)/2),int((x3-y3)/2)
+        assert offset1>=0
+        assert offset2>=0
+        assert offset3>=0
+        return from_mat[:,offset1:offset1+y1,offset2:offset2+y2,offset3:offset3+y3]
 
     def forward(self, batch):
         output_pool1 = self.pool1(self.relu1_2(self.conv1_2(
