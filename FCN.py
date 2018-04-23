@@ -1,5 +1,5 @@
 import torch.nn as nn
-import numpy as np
+
 
 class FCN(nn.Module):
 
@@ -52,9 +52,13 @@ class FCN(nn.Module):
 
         self.score = nn.Conv2d(4096, 1, kernel_size=1)
 
-        # TODO: deconv (ConvTranspose2d) layers, etc...
         self.score2 = nn.ConvTranspose2d(1, 1, kernel_size=4, stride=2)
         self.score_pool4 = nn.Conv2d(512, 1, kernel_size=1)
+
+        self.score4 = nn.ConvTranspose2d(1, 1, kernel_size=4, stride=2, bias=False)
+        self.score_pool3 = nn.Conv2d(256, 1, kernel_size=1)
+
+        self.bigscore = nn.ConvTranspose2d(1, 1, kernel_size=16, stride=8, bias=False)
 
     def crop(self, from_mat, to_mat):
         _,x1,x2,x3=from_mat.shape
@@ -83,9 +87,17 @@ class FCN(nn.Module):
         output_drop7 = self.drop7(self.relu7(self.fc7(output_drop6)))
         output_score = self.score(output_drop7)
 
-        # TODO: deconv (ConvTranspose2d) layers, etc...
         output_score2 = self.score2(output_score)
         output_score_pool4 = self.score_pool4(output_pool4)
-        # crop output_score_pool4 to match output_score2
+        output_score_pool4_cropped = self.crop(output_score_pool4, output_score2)
+        output_score_fused = output_score2 + output_score_pool4_cropped
 
-        return output_score
+        output_score4 = self.score4(output_score_fused)
+        output_score_pool3 = self.score_pool3(output_pool3)
+        output_score_pool3_cropped = self.crop(output_score_pool3, output_score4)
+        output_score_final = output_score4 + output_score_pool3_cropped
+
+        output_bigscore = self.bigscore(output_score_final)
+        output_upscore = self.crop(output_bigscore, batch)
+
+        return output_upscore
