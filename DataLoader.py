@@ -1,7 +1,9 @@
 import os
-import matplotlib.pyplot as plt
 import numpy as np
 from scipy.io import loadmat
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
 
 
 class DataLoader:
