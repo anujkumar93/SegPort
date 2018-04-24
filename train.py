@@ -13,14 +13,15 @@ REG = 1e-4
 
 def train(epochs=EPOCHS, batch_size=BATCH_SIZE, lr=LR, reg=REG):
     model = FCN()
-    # optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=reg)
-    optimizer = torch.optim.SGD(model.parameters(), lr=lr, weight_decay=reg)
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=reg)
+    # optimizer = torch.optim.SGD(model.parameters(), lr=lr, weight_decay=reg)
     loss_function = nn.BCEWithLogitsLoss()
 
     dlo = DataLoader(batch_size)
     training_set_size = dlo.get_training_set_size()
 
     for e in range(epochs):
+        model.train()  # to make sure dropout is in 'train' mode; use model.eval at 'test' time
         print('Epoch:', e)
         dlo.shuffle()
         i = 0

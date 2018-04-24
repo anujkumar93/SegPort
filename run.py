@@ -9,3 +9,4 @@ REG = 1e-4
 
 
 model = train(epochs=EPOCHS, batch_size=BATCH_SIZE, lr=LR, reg=REG)
+# use model.eval() at 'test' time to make sure dropout is in 'test' mode
