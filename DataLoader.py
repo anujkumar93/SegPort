@@ -18,7 +18,7 @@ class DataLoader:
         self.test_data = self.file_list[self.training_set_size:]
         self.batch_counter = 0
         self.batch_size = batch_size
-        sum_train = np.zeros((400, 300, 3))
+        sum_train = 0
         for file_name in self.train_data:
             data = plt.imread(self.data_folder + file_name)
             if len(data.shape) < 3:
@@ -42,9 +42,11 @@ class DataLoader:
             data = data / 255
             data -= self.mean_train
             X.append(data)
-            y.append(loadmat(self.label_folder + str(self.train_data[i][:-4]) + '_mask')['mask'])
+            mask = loadmat(self.label_folder + str(self.train_data[i][:-4]) + '_mask')['mask']
+            label = np.array([1-mask, mask], dtype='uint8')
+            y.append(label)
         self.batch_counter += 1
-        return np.moveaxis(np.array(X), -1, 1), np.expand_dims(np.array(y, dtype='uint8'), 1)
+        return np.moveaxis(np.array(X), -1, 1), np.array(y)
 
     def get_training_set_size(self):
         return self.training_set_size
