@@ -11,6 +11,9 @@ import os
 from FCN import FCN
 
 
+# FOR CLOUD: DO NOT FORGET TO SET NUM THREADS
+# torch.set_num_threads(8)
+
 # OPTIONS
 DEBUG = False
 CONTINUE_TRAINING = False
@@ -55,11 +58,7 @@ else:
                                        checkpoint_interval=CHECKPOINT_INTERVAL, debug=DEBUG)
 torch.save(model.state_dict(), save_dir+'/final_model.pth')  # only saves parameters
 torch.save(optimizer.state_dict(), save_dir+'/final_optimizer.pth')
-# load them back using:
-# model = FCN()
-# model.load_state_dict(torch.load('model.pth'))
-# optimizer = torch.optim.Adam()
-# optimizer.load_state_dict(torch.load('optimizer.pth'))
+np.save(save_dir+'/final_losses', losses)
 
 
 # LOSS CURVE

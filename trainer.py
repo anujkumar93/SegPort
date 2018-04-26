@@ -51,6 +51,7 @@ def train(save_dir, model=None, optimizer=None,
         if (e + 1) % checkpoint_interval == 0:
             torch.save(model.state_dict(), save_dir+'/model_after_epoch_'+str(e)+'.pth')
             torch.save(optimizer.state_dict(), save_dir+'/optimizer_after_epoch_'+str(e)+'.pth')
+            np.save(save_dir+'/losses_after_epoch_'+str(e), losses)
 
             # save loss curve so far
             plt.plot(np.arange(losses.shape[0]) + 1, losses)
