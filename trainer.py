@@ -62,8 +62,10 @@ def train(save_dir, model=None, optimizer=None,
             plt.close()
 
             # display test error
-            _, test_acc = test(model, dlo)
-            print('Test accuracy: {0:.3f}%'.format(test_acc*100))
+            _, test_acc, test_iou = test(model, dlo)
+            print('Test accuracies:')
+            print('Per-pixel classification: {0:.3f}%'.format(test_acc * 100))
+            print('Intersection-over-Union:  {0:.3f}%'.format(test_iou * 100))
 
     return model, optimizer, losses, dlo
 
@@ -73,7 +75,8 @@ def test(model, dlo):
     model.eval()  # to make sure components are in 'test' mode; use model.train() at 'train' time
     test_set_size = dlo.get_test_set_size()
     dlo.reset_test_batch_counter()
-    accuracy = 0
+    per_pixel_accuracy = 0
+    iou_accuracy = 0
     predictions = []
     for i in range(int(np.ceil(test_set_size / dlo.get_batch_size()))):
         model.zero_grad()
@@ -84,6 +87,12 @@ def test(model, dlo):
         output = softmax(output)
         _, preds = torch.max(output, 1)
         predictions.append(preds)
-        accuracy += len(y) * (preds.data.double() == torch.max(y, 1)[1].data.double()).double().mean()
+        preds = preds.data.double()
+        labels = torch.max(y, 1)[1].data.double()
+        per_pixel_accuracy += len(y) * (preds == labels).double().mean()
+        # NOTE: FOLLOWING CODE FOR INTERSECTION-OVER-UNION IS VALID ONLY FOR BINARY CLASSIFICATION
+        intersection = preds * labels
+        union = ((preds + labels) > 0.5).double()
+        iou_accuracy += len(y) * torch.sum(intersection)/torch.sum(union)
 
-    return torch.cat(predictions).data.numpy(), accuracy/test_set_size
+    return torch.cat(predictions).data.numpy(), per_pixel_accuracy/test_set_size, iou_accuracy/test_set_size

@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 import os
 from FCN import FCN
+from DataLoader import DataLoader
 
 
 # FOR CLOUD: DO NOT FORGET TO SET NUM THREADS
@@ -17,6 +18,7 @@ from FCN import FCN
 # OPTIONS
 DEBUG = False
 CONTINUE_TRAINING = False
+TEST_ONLY = False
 MODEL_PATH = 'model.pth'  # .pth file for existing model if continuing training
 OPTIMIZER_PATH = 'optimizer.pth'  # .pth file for existing optimizer if continuing training
 EPOCHS = 1
@@ -38,41 +40,48 @@ if not os.path.exists(save_dir):
     os.makedirs(save_dir)
 
 
-# TRAIN AND SAVE MODEL AND OPTIMIZER
-if CONTINUE_TRAINING:
+if TEST_ONLY:
     model = FCN()
     model.load_state_dict(torch.load(MODEL_PATH))
-
-    if os.path.exists(OPTIMIZER_PATH):
-        optimizer = torch.optim.Adam(model.parameters())
-        optimizer.load_state_dict(torch.load(OPTIMIZER_PATH))
-    else:
-        optimizer = None
-
-    model, optimizer, losses, dlo = trainer.train(save_dir, model=model, optimizer=optimizer,
-                                       epochs=EPOCHS, batch_size=BATCH_SIZE, lr=LR, reg=REG,
-                                       checkpoint_interval=CHECKPOINT_INTERVAL, debug=DEBUG)
+    dlo = DataLoader(BATCH_SIZE, debug=DEBUG)
 else:
-    model, optimizer, losses, dlo = trainer.train(save_dir,
-                                       epochs=EPOCHS, batch_size=BATCH_SIZE, lr=LR, reg=REG,
-                                       checkpoint_interval=CHECKPOINT_INTERVAL, debug=DEBUG)
-torch.save(model.state_dict(), save_dir+'/final_model.pth')  # only saves parameters
-torch.save(optimizer.state_dict(), save_dir+'/final_optimizer.pth')
-np.save(save_dir+'/final_losses', losses)
+    # TRAIN AND SAVE MODEL AND OPTIMIZER
+    if CONTINUE_TRAINING:
+        model = FCN()
+        model.load_state_dict(torch.load(MODEL_PATH))
+
+        if os.path.exists(OPTIMIZER_PATH):
+            optimizer = torch.optim.Adam(model.parameters())
+            optimizer.load_state_dict(torch.load(OPTIMIZER_PATH))
+        else:
+            optimizer = None
+
+        model, optimizer, losses, dlo = trainer.train(save_dir, model=model, optimizer=optimizer,
+                                           epochs=EPOCHS, batch_size=BATCH_SIZE, lr=LR, reg=REG,
+                                           checkpoint_interval=CHECKPOINT_INTERVAL, debug=DEBUG)
+    else:
+        model, optimizer, losses, dlo = trainer.train(save_dir,
+                                           epochs=EPOCHS, batch_size=BATCH_SIZE, lr=LR, reg=REG,
+                                           checkpoint_interval=CHECKPOINT_INTERVAL, debug=DEBUG)
+    torch.save(model.state_dict(), save_dir+'/final_model.pth')  # only saves parameters
+    torch.save(optimizer.state_dict(), save_dir+'/final_optimizer.pth')
+    np.save(save_dir+'/final_losses', losses)
 
 
-# LOSS CURVE
-plt.plot(np.arange(losses.shape[0]) + 1, losses)
-plt.xlabel('Iterations')
-plt.ylabel('Loss')
-plt.tight_layout()
-plt.savefig(save_dir+'/final_loss_curve.png')
-plt.close()
+    # LOSS CURVE
+    plt.plot(np.arange(losses.shape[0]) + 1, losses)
+    plt.xlabel('Iterations')
+    plt.ylabel('Loss')
+    plt.tight_layout()
+    plt.savefig(save_dir+'/final_loss_curve.png')
+    plt.close()
 
 
 # TEST THE MODEL
-test_preds, test_acc = trainer.test(model, dlo)
-print('Final test accuracy: {0:.3f}%'.format(test_acc * 100))
+test_preds, test_acc, test_iou = trainer.test(model, dlo)
+print('Final test accuracies:')
+print('Per-pixel classification: {0:.3f}%'.format(test_acc * 100))
+print('Intersection-over-Union:  {0:.3f}%'.format(test_iou * 100))
 
 
 # GENERATE TEST SAMPLES AND PREDICTIONS
