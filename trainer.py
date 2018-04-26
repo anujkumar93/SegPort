@@ -16,12 +16,16 @@ LR = 1e-4
 REG = 1e-5
 
 
-def train(save_dir, epochs=EPOCHS, batch_size=BATCH_SIZE, lr=LR, reg=REG, checkpoint_interval=5):
-    model = FCN()
-    optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=reg)
+def train(save_dir, model=None, optimizer=None,
+          epochs=EPOCHS, batch_size=BATCH_SIZE, lr=LR, reg=REG,
+          checkpoint_interval=5, debug=False):
+    if model is None:
+        model = FCN()
+    if optimizer is None:
+        optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=reg)
     loss_function = nn.BCEWithLogitsLoss()
 
-    dlo = DataLoader(batch_size)
+    dlo = DataLoader(batch_size, debug=debug)
     training_set_size = dlo.get_training_set_size()
     iters_per_epoch = int(np.ceil(training_set_size / batch_size))
     losses = np.zeros([epochs * iters_per_epoch,])
@@ -46,6 +50,7 @@ def train(save_dir, epochs=EPOCHS, batch_size=BATCH_SIZE, lr=LR, reg=REG, checkp
         # after every checkpoint_interval epochs: save checkpoint model, save loss curve, display test error
         if (e + 1) % checkpoint_interval == 0:
             torch.save(model.state_dict(), save_dir+'/model_after_epoch_'+str(e)+'.pth')
+            torch.save(optimizer.state_dict(), save_dir+'/optimizer_after_epoch_'+str(e)+'.pth')
 
             # save loss curve so far
             plt.plot(np.arange(losses.shape[0]) + 1, losses)
@@ -59,7 +64,7 @@ def train(save_dir, epochs=EPOCHS, batch_size=BATCH_SIZE, lr=LR, reg=REG, checkp
             _, test_acc = test(model, dlo)
             print('Test accuracy: {0:.3f}%'.format(test_acc*100))
 
-    return model, losses, dlo
+    return model, optimizer, losses, dlo
 
 
 def test(model, dlo):

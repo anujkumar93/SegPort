@@ -7,15 +7,21 @@ import matplotlib.pyplot as plt
 
 
 class DataLoader:
-    def __init__(self, batch_size, test_split=0.1):
+    def __init__(self, batch_size, test_split=0.1, debug=False):
+        self.debug = debug
         self.data_folder = "../data/images_data_crop/"
         self.label_folder = "../data/images_mask_crop/"
         self.file_list = os.listdir(self.data_folder)
         self.train_split = 1 - test_split
         self.total_samples = len(self.file_list)
-        self.training_set_size = int(self.train_split * self.total_samples)
+        if self.debug:
+            self.training_set_size = 4  # a small set for debugging
+            # self.test_data = self.file_list[self.training_set_size:8]
+            self.test_data = self.file_list[:self.training_set_size]
+        else:
+            self.training_set_size = int(self.train_split * self.total_samples)
+            self.test_data = self.file_list[self.training_set_size:]
         self.train_data = self.file_list[:self.training_set_size]
-        self.test_data = self.file_list[self.training_set_size:]
         self.test_set_size = len(self.test_data)
         self.training_batch_counter = 0
         self.test_batch_counter = 0
@@ -38,7 +44,8 @@ class DataLoader:
 
     def shuffle_training_set(self):
         self.training_batch_counter = 0
-        self.train_data = np.random.permutation(self.train_data)
+        if not self.debug:
+            self.train_data = np.random.permutation(self.train_data)
 
     def get_next_training_batch(self):
         X, y = [], []

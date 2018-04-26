@@ -8,28 +8,59 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 import os
+from FCN import FCN
 
 
 # OPTIONS
+DEBUG = False
+CONTINUE_TRAINING = False
+MODEL_PATH = 'model.pth'  # .pth file for existing model if continuing training
+OPTIMIZER_PATH = 'optimizer.pth'  # .pth file for existing optimizer if continuing training
 EPOCHS = 1
-BATCH_SIZE = 1
+BATCH_SIZE = 2
 LR = 1e-4
-REG = 1e-5
-CHECKPOINT_INTERVAL = 5
-OUTPUT_TEST_IMAGES = 3
+REG = 0
+CHECKPOINT_INTERVAL = 5  # number of epochs between checkpoints (save model and loss curve)
+NUM_TEST_SAMPLES = 20  # for generating test samples at the end
 
 
+# GENERATE SAVE DIRECTORY PATH
 timestamp = '{:%Y%m%d_%H%M%S}'.format(datetime.datetime.now())  # for save_dir
 if not os.path.exists('output'):
     os.makedirs('output')
-if not os.path.exists('output/' + timestamp):
-    os.makedirs('output/' + timestamp)
-save_dir = 'output/' + timestamp
+save_dir = 'output/' + timestamp + '_' + str(EPOCHS) + 'epochs_' + str(REG) + 'reg'
+if DEBUG:
+    save_dir += '_debug'
+if not os.path.exists(save_dir):
+    os.makedirs(save_dir)
 
-model, losses, dlo = trainer.train(save_dir, epochs=EPOCHS, batch_size=BATCH_SIZE, lr=LR, reg=REG, checkpoint_interval=CHECKPOINT_INTERVAL)
+
+# TRAIN AND SAVE MODEL AND OPTIMIZER
+if CONTINUE_TRAINING:
+    model = FCN()
+    model.load_state_dict(torch.load(MODEL_PATH))
+
+    if os.path.exists(OPTIMIZER_PATH):
+        optimizer = torch.optim.Adam(model.parameters())
+        optimizer.load_state_dict(torch.load(OPTIMIZER_PATH))
+    else:
+        optimizer = None
+
+    model, optimizer, losses, dlo = trainer.train(save_dir, model=model, optimizer=optimizer,
+                                       epochs=EPOCHS, batch_size=BATCH_SIZE, lr=LR, reg=REG,
+                                       checkpoint_interval=CHECKPOINT_INTERVAL, debug=DEBUG)
+else:
+    model, optimizer, losses, dlo = trainer.train(save_dir,
+                                       epochs=EPOCHS, batch_size=BATCH_SIZE, lr=LR, reg=REG,
+                                       checkpoint_interval=CHECKPOINT_INTERVAL, debug=DEBUG)
 torch.save(model.state_dict(), save_dir+'/final_model.pth')  # only saves parameters
-# load it back using torch.load('model.pth')
-# use model.eval() at 'test' time to make sure components are in 'test' mode
+torch.save(optimizer.state_dict(), save_dir+'/final_optimizer.pth')
+# load them back using:
+# model = FCN()
+# model.load_state_dict(torch.load('model.pth'))
+# optimizer = torch.optim.Adam()
+# optimizer.load_state_dict(torch.load('optimizer.pth'))
+
 
 # LOSS CURVE
 plt.plot(np.arange(losses.shape[0]) + 1, losses)
@@ -39,31 +70,39 @@ plt.tight_layout()
 plt.savefig(save_dir+'/final_loss_curve.png')
 plt.close()
 
+
+# TEST THE MODEL
 test_preds, test_acc = trainer.test(model, dlo)
 print('Final test accuracy: {0:.3f}%'.format(test_acc * 100))
 
-# plotting sample test images and their masks
+
+# GENERATE TEST SAMPLES AND PREDICTIONS
 test_data, test_set_size = dlo.test_data, dlo.test_set_size
-sampled_indxs = np.random.choice(range(test_set_size), OUTPUT_TEST_IMAGES, replace=False)
-for i in range(OUTPUT_TEST_IMAGES):
+if NUM_TEST_SAMPLES > test_set_size:
+    NUM_TEST_SAMPLES = test_set_size
+sampled_indices = np.random.choice(range(test_set_size), NUM_TEST_SAMPLES, replace=False)
+for i in range(NUM_TEST_SAMPLES):
     plt.subplot(131)
-    fig = plt.imshow(mpimg.imread(dlo.data_folder + str(test_data[sampled_indxs[i]])))
+    fig = plt.imshow(mpimg.imread(dlo.data_folder + str(test_data[sampled_indices[i]])))
     plt.axis('off')
     fig.axes.get_xaxis().set_visible(False)
     fig.axes.get_yaxis().set_visible(False)
+    plt.title('Input')
     plt.tight_layout()
     plt.subplot(132)
-    fig = plt.imshow(loadmat(dlo.label_folder + str(test_data[sampled_indxs[i]][:-4]) + '_mask')['mask'])
+    fig = plt.imshow(loadmat(dlo.label_folder + str(test_data[sampled_indices[i]][:-4]) + '_mask')['mask'])
     plt.axis('off')
     fig.axes.get_xaxis().set_visible(False)
     fig.axes.get_yaxis().set_visible(False)
+    plt.title('Annotation')
     plt.tight_layout()
     plt.subplot(133)
-    fig = plt.imshow(test_preds[sampled_indxs[i], :, :])
+    fig = plt.imshow(test_preds[sampled_indices[i], :, :])
     plt.axis('off')
     fig.axes.get_xaxis().set_visible(False)
     fig.axes.get_yaxis().set_visible(False)
+    plt.title('Prediction')
     plt.tight_layout()
-    plt.subplots_adjust(hspace=0, wspace=0)
-    plt.savefig(str(test_data[sampled_indxs[i]]), bbox_inches='tight', pad_inches=0)
+    plt.subplots_adjust(hspace=0.1, wspace=0.1)
+    plt.savefig(save_dir + '/' + str(test_data[sampled_indices[i]]), bbox_inches='tight', pad_inches=0.1)
     plt.close()
