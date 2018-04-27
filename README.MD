@@ -13,6 +13,6 @@ Code is meant for the data from Shen et al. The data is handled through ```DataL
 ### References
 Long, J., Shelhamer, E. and Darrell, T., 2015. Fully convolutional networks for semantic segmentation. In Proceedings of the IEEE conference on computer vision and pattern recognition (pp. 3431-3440).
 
-Shen, X., Hertzmann, A., Jia, J., Paris, S., Price, B., Shechtman, E. and Sachs, I., 2016, May. Automatic portrait segmentation for image stylization. In Computer Graphics Forum (Vol. 35, No. 2, pp. 93-102).
+Shen, X., Hertzmann, A., Jia, J., Paris, S., Price, B., Shechtman, E. and Sachs, I., 2016, May. Automatic portrait segmentation for image stylization. In Computer Graphics Forum (Vol. 35, No. 2, pp. 93-102). (Data and Caffe implementation available at http://xiaoyongshen.me/webpage_portrait/index.html)
 
 Simonyan, K. and Zisserman, A., 2014. Very deep convolutional networks for large-scale image recognition. arXiv preprint arXiv:1409.1556.
