@@ -4,6 +4,8 @@ import numpy as np
 import sys
 from FCN import FCN
 from DataLoader import DataLoader
+import time
+import math
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -30,6 +32,7 @@ def train(save_dir, model=None, optimizer=None,
     iters_per_epoch = int(np.ceil(training_set_size / batch_size))
     losses = np.zeros([epochs * iters_per_epoch,])
 
+    start_time = time.time()
     for e in range(epochs):
         model.train()  # to make sure components are in 'train' mode; use model.eval() at 'test' time
         dlo.shuffle_training_set()
@@ -42,23 +45,26 @@ def train(save_dir, model=None, optimizer=None,
             loss = loss_function(output, y)
             loss.backward()
             optimizer.step()
-            losses[i + e * iters_per_epoch] = loss.data[0]
-            print('Epoch: {:03}    Iter: {:04}    Loss: {}'.format(e, i, loss.data[0]))
+            losses[i + e * iters_per_epoch] = loss.item()
+            print('{:3}%   Time: {:21}  Epoch: {:4}  Iter: {:4}  Loss: {}'.format(
+                  int((i+1 + iters_per_epoch * e) / (iters_per_epoch * epochs) * 100),
+                  time_since(start_time, (i + 1 + iters_per_epoch * e) / (iters_per_epoch * epochs)),
+                  str(e + 1), str(i + 1), loss.item()))
             sys.stdout.flush()
             del x, y, output, loss
 
         # after every checkpoint_interval epochs: save checkpoint model, save loss curve, display test error
         if (e + 1) % checkpoint_interval == 0:
-            torch.save(model.state_dict(), save_dir+'/model_after_epoch_'+str(e)+'.pth')
-            torch.save(optimizer.state_dict(), save_dir+'/optimizer_after_epoch_'+str(e)+'.pth')
-            np.save(save_dir+'/losses_after_epoch_'+str(e), losses)
+            torch.save(model.state_dict(), save_dir+'/model_after_epoch_'+str(e+1)+'.pth')
+            torch.save(optimizer.state_dict(), save_dir+'/optimizer_after_epoch_'+str(e+1)+'.pth')
+            np.save(save_dir+'/losses_after_epoch_'+str(e+1), losses)
 
             # save loss curve so far
             plt.plot(np.arange(losses.shape[0]) + 1, losses)
             plt.xlabel('Iterations')
             plt.ylabel('Loss')
             plt.tight_layout()
-            plt.savefig(save_dir+'/loss_curve_after_epoch_'+str(e)+'.png')
+            plt.savefig(save_dir+'/loss_curve_after_epoch_'+str(e+1)+'.png')
             plt.close()
 
             # display test error
@@ -96,3 +102,17 @@ def test(model, dlo):
         iou_accuracy += len(y) * torch.sum(intersection)/torch.sum(union)
 
     return torch.cat(predictions).data.numpy(), per_pixel_accuracy/test_set_size, iou_accuracy/test_set_size
+
+
+def as_minutes(s):
+    m = math.floor(s / 60)
+    s -= m * 60
+    return '%dm %ds' % (m, s)
+
+
+def time_since(since, percent):
+    now = time.time()
+    s = now - since
+    es = s / percent
+    rs = es - s
+    return '%s (-%s)' % (as_minutes(s), as_minutes(rs))

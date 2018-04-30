@@ -22,7 +22,7 @@ TEST_ONLY = False
 USE_6_CHANNELS = True
 MODEL_PATH = 'model.pth'  # .pth file for existing model if continuing training
 OPTIMIZER_PATH = 'optimizer.pth'  # .pth file for existing optimizer if continuing training
-EPOCHS = 1
+EPOCHS = 2
 BATCH_SIZE = 2
 LR = 1e-4
 REG = 0
@@ -115,5 +115,5 @@ for i in range(NUM_TEST_SAMPLES):
     plt.title('Prediction')
     plt.tight_layout()
     plt.subplots_adjust(hspace=0.1, wspace=0.1)
-    plt.savefig(save_dir + '/' + str(test_data[sampled_indices[i]])[-4] + '.png', bbox_inches='tight', pad_inches=0.1)
+    plt.savefig(save_dir + '/' + str(test_data[sampled_indices[i]])[:-4] + '.png', bbox_inches='tight', pad_inches=0.1)
     plt.close()
