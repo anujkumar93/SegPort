@@ -7,9 +7,16 @@ import matplotlib.pyplot as plt
 
 
 class DataLoader:
-    def __init__(self, batch_size, test_split=0.1, debug=False):
+    def __init__(self, batch_size, test_split=0.1, use_6_channels=True, debug=False):
+        assert isinstance(batch_size, int)
+        self.batch_size = batch_size
         self.debug = debug
-        self.data_folder = "../data/images_data_crop/"
+        self.use_6_channels = use_6_channels
+        if self.use_6_channels:
+            self.data_folder = "../data/6_channel_data/"  # pre-processed (zero-mean, normalized, position and shape channels)
+        else:
+            self.data_folder = "../data/images_data_crop/"
+        self.images_folder = "../data/images_data_crop/"
         self.label_folder = "../data/images_mask_crop/"
         self.file_list = os.listdir(self.data_folder)
         self.train_split = 1 - test_split
@@ -25,16 +32,15 @@ class DataLoader:
         self.test_set_size = len(self.test_data)
         self.training_batch_counter = 0
         self.test_batch_counter = 0
-        self.batch_size = batch_size
-        sum_train = 0
-        for file_name in self.train_data:
-            data = plt.imread(self.data_folder + file_name)
-            if len(data.shape) < 3:
-                data = np.stack((data,) * 3, 2)
-            data = data / 255
-            sum_train += data
-        self.mean_train = sum_train / float(self.training_set_size)
-        assert self.batch_size == int(self.batch_size)
+        if not self.use_6_channels:
+            sum_train = 0
+            for file_name in self.train_data:
+                data = plt.imread(self.data_folder + file_name)
+                if len(data.shape) < 3:
+                    data = np.stack((data,) * 3, 2)
+                data = data / 255
+                sum_train += data
+            self.mean_train = sum_train / float(self.training_set_size)
 
     def get_batch_size(self):
         return self.batch_size
@@ -51,11 +57,15 @@ class DataLoader:
         X, y = [], []
         for i in range(self.training_batch_counter * self.batch_size,
                        min(self.training_set_size, (self.training_batch_counter + 1) * self.batch_size)):
-            data = plt.imread(self.data_folder + str(self.train_data[i]))
-            if len(data.shape) < 3:
-                data = np.stack((data,) * 3, 2)
-            data = data / 255
-            data -= self.mean_train
+            if self.use_6_channels:
+                data = loadmat(self.data_folder + str(self.train_data[i]))
+                data = data['img']
+            else:
+                data = plt.imread(self.data_folder + str(self.train_data[i]))
+                if len(data.shape) < 3:
+                    data = np.stack((data,) * 3, 2)
+                data = data / 255
+                data -= self.mean_train
             X.append(data)
             mask = loadmat(self.label_folder + str(self.train_data[i][:-4]) + '_mask')['mask']
             label = np.array([1-mask, mask], dtype='uint8')
@@ -76,11 +86,14 @@ class DataLoader:
         X, y = [], []
         for i in range(self.test_batch_counter * self.batch_size,
                        min(self.test_set_size, (self.test_batch_counter + 1) * self.batch_size)):
-            data = plt.imread(self.data_folder + str(self.test_data[i]))
-            if len(data.shape) < 3:
-                data = np.stack((data,) * 3, 2)
-            data = data / 255
-            data -= self.mean_train  # this still uses mean_train!
+            if self.use_6_channels:
+                data = loadmat(self.data_folder + str(self.test_data[i]))
+                data = data['img']
+            else:
+                if len(data.shape) < 3:
+                    data = np.stack((data,) * 3, 2)
+                data = data / 255
+                data -= self.mean_train  # this still uses mean_train!
             X.append(data)
             mask = loadmat(self.label_folder + str(self.test_data[i][:-4]) + '_mask')['mask']
             label = np.array([1-mask, mask], dtype='uint8')

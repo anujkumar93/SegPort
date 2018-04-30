@@ -18,14 +18,14 @@ REG = 1e-5
 
 def train(save_dir, model=None, optimizer=None,
           epochs=EPOCHS, batch_size=BATCH_SIZE, lr=LR, reg=REG,
-          checkpoint_interval=5, debug=False):
+          checkpoint_interval=5, use_6_channels=True, debug=False):
     if model is None:
-        model = FCN()
+        model = FCN(use_6_channels=use_6_channels)
     if optimizer is None:
         optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=reg)
     loss_function = nn.BCEWithLogitsLoss()
 
-    dlo = DataLoader(batch_size, debug=debug)
+    dlo = DataLoader(batch_size, use_6_channels=use_6_channels, debug=debug)
     training_set_size = dlo.get_training_set_size()
     iters_per_epoch = int(np.ceil(training_set_size / batch_size))
     losses = np.zeros([epochs * iters_per_epoch,])

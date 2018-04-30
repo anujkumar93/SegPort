@@ -13,12 +13,13 @@ from DataLoader import DataLoader
 
 
 # FOR CLOUD: DO NOT FORGET TO SET NUM THREADS
-# torch.set_num_threads(8)
+# torch.set_num_threads(16)
 
 # OPTIONS
 DEBUG = False
 CONTINUE_TRAINING = False
 TEST_ONLY = False
+USE_6_CHANNELS = True
 MODEL_PATH = 'model.pth'  # .pth file for existing model if continuing training
 OPTIMIZER_PATH = 'optimizer.pth'  # .pth file for existing optimizer if continuing training
 EPOCHS = 1
@@ -41,13 +42,13 @@ if not os.path.exists(save_dir):
 
 
 if TEST_ONLY:
-    model = FCN()
+    model = FCN(use_6_channels=USE_6_CHANNELS)
     model.load_state_dict(torch.load(MODEL_PATH))
-    dlo = DataLoader(BATCH_SIZE, debug=DEBUG)
+    dlo = DataLoader(BATCH_SIZE, use_6_channels=USE_6_CHANNELS, debug=DEBUG)
 else:
     # TRAIN AND SAVE MODEL AND OPTIMIZER
     if CONTINUE_TRAINING:
-        model = FCN()
+        model = FCN(use_6_channels=USE_6_CHANNELS)
         model.load_state_dict(torch.load(MODEL_PATH))
 
         if os.path.exists(OPTIMIZER_PATH):
@@ -57,12 +58,14 @@ else:
             optimizer = None
 
         model, optimizer, losses, dlo = trainer.train(save_dir, model=model, optimizer=optimizer,
-                                           epochs=EPOCHS, batch_size=BATCH_SIZE, lr=LR, reg=REG,
-                                           checkpoint_interval=CHECKPOINT_INTERVAL, debug=DEBUG)
+                                                      epochs=EPOCHS, batch_size=BATCH_SIZE, lr=LR, reg=REG,
+                                                      checkpoint_interval=CHECKPOINT_INTERVAL,
+                                                      use_6_channels=USE_6_CHANNELS, debug=DEBUG)
     else:
         model, optimizer, losses, dlo = trainer.train(save_dir,
-                                           epochs=EPOCHS, batch_size=BATCH_SIZE, lr=LR, reg=REG,
-                                           checkpoint_interval=CHECKPOINT_INTERVAL, debug=DEBUG)
+                                                      epochs=EPOCHS, batch_size=BATCH_SIZE, lr=LR, reg=REG,
+                                                      checkpoint_interval=CHECKPOINT_INTERVAL,
+                                                      use_6_channels=USE_6_CHANNELS, debug=DEBUG)
     torch.save(model.state_dict(), save_dir+'/final_model.pth')  # only saves parameters
     torch.save(optimizer.state_dict(), save_dir+'/final_optimizer.pth')
     np.save(save_dir+'/final_losses', losses)
@@ -91,7 +94,7 @@ if NUM_TEST_SAMPLES > test_set_size:
 sampled_indices = np.random.choice(range(test_set_size), NUM_TEST_SAMPLES, replace=False)
 for i in range(NUM_TEST_SAMPLES):
     plt.subplot(131)
-    fig = plt.imshow(mpimg.imread(dlo.data_folder + str(test_data[sampled_indices[i]])))
+    fig = plt.imshow(mpimg.imread(dlo.images_folder + str(test_data[sampled_indices[i]])[:-4] + '.jpg'))
     plt.axis('off')
     fig.axes.get_xaxis().set_visible(False)
     fig.axes.get_yaxis().set_visible(False)
@@ -112,5 +115,5 @@ for i in range(NUM_TEST_SAMPLES):
     plt.title('Prediction')
     plt.tight_layout()
     plt.subplots_adjust(hspace=0.1, wspace=0.1)
-    plt.savefig(save_dir + '/' + str(test_data[sampled_indices[i]]), bbox_inches='tight', pad_inches=0.1)
+    plt.savefig(save_dir + '/' + str(test_data[sampled_indices[i]])[-4] + '.png', bbox_inches='tight', pad_inches=0.1)
     plt.close()

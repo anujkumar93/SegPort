@@ -3,12 +3,15 @@ import torch.nn as nn
 
 class FCN(nn.Module):
 
-    def __init__(self):
+    def __init__(self, use_6_channels=True):
         super().__init__()
 
         self.relu = nn.ReLU(inplace=True)
 
-        self.conv1_1 = nn.Conv2d(3, 64, kernel_size=3, padding=1)
+        if use_6_channels:
+            self.conv1_1 = nn.Conv2d(6, 64, kernel_size=3, padding=1)
+        else:
+            self.conv1_1 = nn.Conv2d(3, 64, kernel_size=3, padding=1)
         self.conv1_2 = nn.Conv2d(64, 64, kernel_size=3, padding=1)
         self.pool1 = nn.MaxPool2d(kernel_size=2, stride=2)
 
