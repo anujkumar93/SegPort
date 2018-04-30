@@ -1,1 +1,0 @@
-https://github.com/shelhamer/fcn.berkeleyvision.org/tree/master/voc-fcn8s
