@@ -20,12 +20,13 @@ DEBUG = False
 CONTINUE_TRAINING = False
 TEST_ONLY = False
 USE_6_CHANNELS = True
+USE_CROSS_ENTROPY_LOSS = True
 MODEL_PATH = 'model.pth'  # .pth file for existing model if continuing training
 OPTIMIZER_PATH = 'optimizer.pth'  # .pth file for existing optimizer if continuing training
-EPOCHS = 2
-BATCH_SIZE = 2
+EPOCHS = 3
+BATCH_SIZE = 3
 LR = 1e-4
-REG = 0
+REG = 1e-6
 CHECKPOINT_INTERVAL = 5  # number of epochs between checkpoints (save model and loss curve)
 NUM_TEST_SAMPLES = 20  # for generating test samples at the end
 
@@ -60,12 +61,14 @@ else:
         model, optimizer, losses, dlo = trainer.train(save_dir, model=model, optimizer=optimizer,
                                                       epochs=EPOCHS, batch_size=BATCH_SIZE, lr=LR, reg=REG,
                                                       checkpoint_interval=CHECKPOINT_INTERVAL,
-                                                      use_6_channels=USE_6_CHANNELS, debug=DEBUG)
+                                                      use_6_channels=USE_6_CHANNELS, debug=DEBUG,
+                                                      use_cross_entropy_loss=USE_CROSS_ENTROPY_LOSS)
     else:
         model, optimizer, losses, dlo = trainer.train(save_dir,
                                                       epochs=EPOCHS, batch_size=BATCH_SIZE, lr=LR, reg=REG,
                                                       checkpoint_interval=CHECKPOINT_INTERVAL,
-                                                      use_6_channels=USE_6_CHANNELS, debug=DEBUG)
+                                                      use_6_channels=USE_6_CHANNELS, debug=DEBUG,
+                                                      use_cross_entropy_loss=USE_CROSS_ENTROPY_LOSS)
     torch.save(model.state_dict(), save_dir+'/final_model.pth')  # only saves parameters
     torch.save(optimizer.state_dict(), save_dir+'/final_optimizer.pth')
     np.save(save_dir+'/final_losses', losses)
@@ -88,7 +91,7 @@ print('Intersection-over-Union:  {0:.3f}%'.format(test_iou * 100))
 
 
 # GENERATE TEST SAMPLES AND PREDICTIONS
-test_data, test_set_size = dlo.test_data, dlo.test_set_size
+test_data, test_set_size = dlo.get_test_data_file_names(), dlo.get_test_set_size()
 if NUM_TEST_SAMPLES > test_set_size:
     NUM_TEST_SAMPLES = test_set_size
 sampled_indices = np.random.choice(range(test_set_size), NUM_TEST_SAMPLES, replace=False)

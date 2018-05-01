@@ -20,12 +20,18 @@ REG = 1e-5
 
 def train(save_dir, model=None, optimizer=None,
           epochs=EPOCHS, batch_size=BATCH_SIZE, lr=LR, reg=REG,
-          checkpoint_interval=5, use_6_channels=True, debug=False):
+          checkpoint_interval=5, use_6_channels=True, debug=False, use_cross_entropy_loss=True):
+
     if model is None:
         model = FCN(use_6_channels=use_6_channels)
+
     if optimizer is None:
         optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=reg)
-    loss_function = nn.BCEWithLogitsLoss()
+
+    if use_cross_entropy_loss:
+        loss_function = nn.CrossEntropyLoss()
+    else:
+        loss_function = nn.BCEWithLogitsLoss()
 
     dlo = DataLoader(batch_size, use_6_channels=use_6_channels, debug=debug)
     training_set_size = dlo.get_training_set_size()
@@ -40,13 +46,16 @@ def train(save_dir, model=None, optimizer=None,
             model.zero_grad()
             x, y = dlo.get_next_training_batch()
             x = torch.autograd.Variable(torch.FloatTensor(x))
-            y = torch.autograd.Variable(torch.FloatTensor(y))
+            if use_cross_entropy_loss:
+                y = torch.autograd.Variable(torch.LongTensor(y))
+            else:
+                y = torch.autograd.Variable(torch.FloatTensor(y))
             output = model(x)
             loss = loss_function(output, y)
             loss.backward()
             optimizer.step()
             losses[i + e * iters_per_epoch] = loss.item()
-            print('{:3}%   Time: {:21}  Epoch: {:4}  Iter: {:4}  Loss: {}'.format(
+            print('{:3}%  Time: {:21}  Epoch: {:3}  Iter: {:3}  Loss: {}'.format(
                   int((i+1 + iters_per_epoch * e) / (iters_per_epoch * epochs) * 100),
                   time_since(start_time, (i + 1 + iters_per_epoch * e) / (iters_per_epoch * epochs)),
                   str(e + 1), str(i + 1), loss.item()))
@@ -88,17 +97,15 @@ def test(model, dlo):
         model.zero_grad()
         x, y = dlo.get_next_test_batch()
         x = torch.autograd.Variable(torch.FloatTensor(x))
-        y = torch.autograd.Variable(torch.FloatTensor(y))
+        y = torch.autograd.Variable(torch.LongTensor(y))
         output = model(x)
         output = softmax(output)
         _, preds = torch.max(output, 1)
         predictions.append(preds)
-        preds = preds.data.double()
-        labels = torch.max(y, 1)[1].data.double()
-        per_pixel_accuracy += len(y) * (preds == labels).double().mean()
+        per_pixel_accuracy += len(y) * (preds == y).double().mean()
         # NOTE: FOLLOWING CODE FOR INTERSECTION-OVER-UNION IS VALID ONLY FOR BINARY CLASSIFICATION
-        intersection = preds * labels
-        union = ((preds + labels) > 0.5).double()
+        intersection = preds * y
+        union = (preds + y) > 0
         iou_accuracy += len(y) * torch.sum(intersection)/torch.sum(union)
 
     return torch.cat(predictions).data.numpy(), per_pixel_accuracy/test_set_size, iou_accuracy/test_set_size
