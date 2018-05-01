@@ -106,7 +106,7 @@ def test(model, dlo):
         # NOTE: FOLLOWING CODE FOR INTERSECTION-OVER-UNION IS VALID ONLY FOR BINARY CLASSIFICATION
         intersection = preds * y
         union = (preds + y) > 0
-        iou_accuracy += len(y) * torch.sum(intersection)/torch.sum(union)
+        iou_accuracy += len(y) * torch.sum(intersection).double()/torch.sum(union).double()
 
     return torch.cat(predictions).data.numpy(), per_pixel_accuracy/test_set_size, iou_accuracy/test_set_size
 
