@@ -32,7 +32,7 @@ class DataLoader:
         self.images_folder = "../data/images_data_crop/"
         self.label_folder = "../data/images_mask_crop/"
         
-        self.file_list = os.listdir(self.data_folder)
+        self.file_list = sorted(os.listdir(self.data_folder))
         self.total_samples = len(self.file_list)
         
         self.state_dict = self.get_state_dict()
