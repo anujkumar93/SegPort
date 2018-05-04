@@ -72,6 +72,7 @@ def train(save_dir, model=None, optimizer=None,
             plt.plot(np.arange(losses.shape[0]) + 1, losses)
             plt.xlabel('Iterations')
             plt.ylabel('Loss')
+            plt.ylim(ymin=0)
             plt.tight_layout()
             plt.savefig(save_dir+'/loss_curve_after_epoch_'+str(e+1)+'.png')
             plt.close()

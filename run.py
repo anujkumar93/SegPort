@@ -21,14 +21,14 @@ CONTINUE_TRAINING = False
 TEST_ONLY = False
 USE_6_CHANNELS = True
 USE_CROSS_ENTROPY_LOSS = True
-MODEL_PATH = 'model.pth'  # .pth file for existing model if continuing training
-OPTIMIZER_PATH = 'optimizer.pth'  # .pth file for existing optimizer if continuing training
-EPOCHS = 3
-BATCH_SIZE = 3
+MODEL_PATH = 'model.pth'  # if continuing training or only testing
+OPTIMIZER_PATH = 'optimizer.pth'  # if continuing training or only testing
+EPOCHS = 2
+BATCH_SIZE = 2
 LR = 1e-4
 REG = 1e-6
 CHECKPOINT_INTERVAL = 5  # number of epochs between checkpoints (save model and loss curve)
-NUM_TEST_SAMPLES = 20  # for generating test samples at the end
+NUM_TEST_SAMPLES = 30  # for generating test samples at the end
 
 
 # GENERATE SAVE DIRECTORY PATH
@@ -78,6 +78,7 @@ else:
     plt.plot(np.arange(losses.shape[0]) + 1, losses)
     plt.xlabel('Iterations')
     plt.ylabel('Loss')
+    plt.ylim(ymin=0)
     plt.tight_layout()
     plt.savefig(save_dir+'/final_loss_curve.png')
     plt.close()
