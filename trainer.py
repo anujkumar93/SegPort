@@ -44,6 +44,7 @@ def train(save_dir, model=None, optimizer=None,
         dlo.shuffle_training_set()
         for i in range(iters_per_epoch):
             model.zero_grad()
+
             x, y = dlo.get_next_training_batch()
             x = torch.autograd.Variable(torch.FloatTensor(x))
             if use_cross_entropy_loss:
@@ -52,15 +53,16 @@ def train(save_dir, model=None, optimizer=None,
                 y = torch.autograd.Variable(torch.FloatTensor(y))
             output = model(x)
             loss = loss_function(output, y)
+            losses[i + e * iters_per_epoch] = loss.item()
             loss.backward()
             optimizer.step()
-            losses[i + e * iters_per_epoch] = loss.item()
-            print('{:3}%  Time: {:21}  Epoch: {:3}  Iter: {:3}  Loss: {}'.format(
-                  int((i+1 + iters_per_epoch * e) / (iters_per_epoch * epochs) * 100),
-                  time_since(start_time, (i + 1 + iters_per_epoch * e) / (iters_per_epoch * epochs)),
-                  str(e + 1), str(i + 1), loss.item()))
-            sys.stdout.flush()
             del x, y, output, loss
+
+            print('{:3}%  Time: {:21}  Epoch: {:3}  Iter: {:3}  Loss: {}'.format(
+                int((i + 1 + iters_per_epoch * e) / (iters_per_epoch * epochs) * 100),
+                time_since(start_time, (i + 1 + iters_per_epoch * e) / (iters_per_epoch * epochs)),
+                str(e + 1), str(i + 1), losses[i + e * iters_per_epoch]))
+            sys.stdout.flush()
 
         # after every checkpoint_interval epochs: save checkpoint model, save loss curve, display test error
         if (e + 1) % checkpoint_interval == 0:
@@ -102,14 +104,15 @@ def test(model, dlo):
         output = model(x)
         output = softmax(output)
         _, preds = torch.max(output, 1)
-        predictions.append(preds)
-        per_pixel_accuracy += len(y) * (preds == y).double().mean()
+        predictions.append(preds.numpy().copy())
+        per_pixel_accuracy += len(y) * (preds == y).double().mean().item()
         # NOTE: FOLLOWING CODE FOR INTERSECTION-OVER-UNION IS VALID ONLY FOR BINARY CLASSIFICATION
-        intersection = preds * y
-        union = (preds + y) > 0
-        iou_accuracy += len(y) * torch.sum(intersection).double()/torch.sum(union).double()
+        intersection = torch.sum(preds * y).double().item()
+        union = torch.sum((preds + y) > 0).double().item()
+        iou_accuracy += len(y) * intersection/union
+        del x, y, output, preds
 
-    return torch.cat(predictions).data.numpy(), per_pixel_accuracy/test_set_size, iou_accuracy/test_set_size
+    return np.concatenate(predictions), per_pixel_accuracy/test_set_size, iou_accuracy/test_set_size
 
 
 def as_minutes(s):
