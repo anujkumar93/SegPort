@@ -1,5 +1,6 @@
 # Portrait Segmentation in PyTorch
-Based on Automatic Portrait Segmentation for Image Stylization (Shen et al. 2016)
+Based on Automatic Portrait Segmentation for Image Stylization (Shen et al. 2016)\
+Implemented as a final project for CS690IV Intelligent Visual Computing. University of Massachusetts Amherst. Spring 2018.
 
 ### Notes and Instructions
 ```FCN.py``` contains a PyTorch implementation of FCN-8s (Long et al. 2015), using the convolutional part of the model architecture of VGG-16 (Simonyan et al. 2014).
